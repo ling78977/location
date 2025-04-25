@@ -168,26 +168,6 @@ void SigHandle(int sig) {
   rclcpp::shutdown();
 }
 
-inline void dump_lio_state_to_log(FILE *fp) {
-  V3D rot_ang(Log(state_point.rot.toRotationMatrix()));
-  fprintf(fp, "%lf ", Measures.lidar_beg_time - first_lidar_time);
-  fprintf(fp, "%lf %lf %lf ", rot_ang(0), rot_ang(1), rot_ang(2)); // Angle
-  fprintf(fp, "%lf %lf %lf ", state_point.pos(0), state_point.pos(1),
-          state_point.pos(2));                // Pos
-  fprintf(fp, "%lf %lf %lf ", 0.0, 0.0, 0.0); // omega
-  fprintf(fp, "%lf %lf %lf ", state_point.vel(0), state_point.vel(1),
-          state_point.vel(2));                // Vel
-  fprintf(fp, "%lf %lf %lf ", 0.0, 0.0, 0.0); // Acc
-  fprintf(fp, "%lf %lf %lf ", state_point.bg(0), state_point.bg(1),
-          state_point.bg(2)); // Bias_g
-  fprintf(fp, "%lf %lf %lf ", state_point.ba(0), state_point.ba(1),
-          state_point.ba(2)); // Bias_a
-  fprintf(fp, "%lf %lf %lf ", state_point.grav[0], state_point.grav[1],
-          state_point.grav[2]); // Bias_a
-  fprintf(fp, "\r\n");
-  fflush(fp);
-}
-
 void pointBodyToWorld(PointType const *const pi, PointType *const po) {
   V3D p_body(pi->x, pi->y, pi->z);
   V3D p_global(state_point.rot * (state_point.offset_R_L_I * p_body +
@@ -221,17 +201,6 @@ void RGBpointBodyToWorld(PointType const *const pi, PointType *const po) {
   po->x = p_global(0);
   po->y = p_global(1);
   po->z = p_global(2);
-  po->intensity = pi->intensity;
-}
-
-void RGBpointBodyLidarToIMU(PointType const *const pi, PointType *const po) {
-  V3D p_body_lidar(pi->x, pi->y, pi->z);
-  V3D p_body_imu(state_point.offset_R_L_I * p_body_lidar +
-                 state_point.offset_T_L_I);
-
-  po->x = p_body_imu(0);
-  po->y = p_body_imu(1);
-  po->z = p_body_imu(2);
   po->intensity = pi->intensity;
 }
 
@@ -518,18 +487,26 @@ void publish_map(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
     return;
   }
 
+  // sensor_msgs::msg::PointCloud2 laserCloudmsg;
+  // pcl::toROSMsg(*pcl_wait_pub, laserCloudmsg);
+  // // laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
+  // laserCloudmsg.header.stamp = get_ros_time(lidar_end_time);
+  // laserCloudmsg.header.frame_id = "camera_init";
+  // pubLaserCloudMap->publish(laserCloudmsg);
+
+  auto t1=omp_get_wtime();
+  // PointVector().swap(ikdtree.PCL_Storage);
+  ikdtree.flatten(ikdtree.Root_Node, ikdtree.PCL_Storage, NOT_RECORD);
+  // featsFromMap->clear();
+  featsFromMap->points = ikdtree.PCL_Storage;
+  std::cout<<"转换耗时: "<<omp_get_wtime()-t1<<std::endl;
   sensor_msgs::msg::PointCloud2 laserCloudmsg;
-  pcl::toROSMsg(*pcl_wait_pub, laserCloudmsg);
+  pcl::toROSMsg(*featsFromMap, laserCloudmsg);
   // laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
   laserCloudmsg.header.stamp = get_ros_time(lidar_end_time);
   laserCloudmsg.header.frame_id = "camera_init";
   pubLaserCloudMap->publish(laserCloudmsg);
 
-  // sensor_msgs::msg::PointCloud2 laserCloudMap;
-  // pcl::toROSMsg(*featsFromMap, laserCloudMap);
-  // laserCloudMap.header.stamp = get_ros_time(lidar_end_time);
-  // laserCloudMap.header.frame_id = "camera_init";
-  // pubLaserCloudMap->publish(laserCloudMap);
 }
 
 void save_to_pcd() {
@@ -537,6 +514,7 @@ void save_to_pcd() {
   // auto pkg_dir = ament_index_cpp::get_package_share_directory("fast_lio");
 
   // auto pkg_dir=rclcpp::package::get_package_share_directory("fast_lio");
+  // if()
   pcd_writer.writeBinary(std::string(ROOT_DIR)+"/PCD/scans.pcd", *pcl_wait_pub);
 
   PointVector().swap(ikdtree.PCL_Storage);
@@ -1028,7 +1006,6 @@ private:
   void map_publish_callback() {
     if (map_pub_en)
       publish_map(pubLaserCloudMap_);
-    // RCLCPP_INFO_STREAM(this->get_logger(), pcl_wait_pub->size());
   }
 
   void map_save_callback(std_srvs::srv::Trigger::Request::ConstSharedPtr req,

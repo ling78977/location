@@ -65,7 +65,7 @@ void RMSerialDriver::sendTwistCallback()
   this->twist_.vx = vx_;
   this->twist_.vy = vy_;
   this->twist_.vyaw = vyaw_;
-  vx_ = 0, vy_ = 0, vyaw_ = 0;
+  // vx_ = 0, vy_ = 0, vyaw_ = 0;
   twist_mutes_.unlock();
   crc16::Append_CRC16_Check_Sum(reinterpret_cast<uint8_t *>(&twist_), sizeof(twist_));
   std::vector<uint8_t> data = toVector(twist_);

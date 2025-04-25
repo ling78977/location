@@ -949,7 +949,9 @@ private:
         ikdtree.Build(feats_down_world->points);
       }
       last_key_state_point = state_point;
-      *pcl_wait_pub += *feats_down_world;
+      if(map_pub_en){
+        *pcl_wait_pub += *feats_down_world;
+      }
       return;
     }
     int featsFromMapNum = ikdtree.validnum();
@@ -1000,15 +1002,19 @@ private:
     t5 = omp_get_wtime();
 
     /******* 判断关键帧 *******/
-    auto diff_dis = (state_point.pos - last_key_state_point.pos).norm();
-    double data[3] = {0.0, 0.0, 0.0};      // 初始化数据
-    MTK::vectview<double, 3> diff_R(data); // 使用数据初始化vectview
-    state_point.rot.boxminus(diff_R, last_key_state_point.rot);
-    if (diff_dis > 0.3 || abs(rad2deg(diff_R.x())) > 30 ||
-        abs(rad2deg(diff_R.y())) > 30) {
-      *pcl_wait_pub += *feats_down_world;
-      last_key_state_point = state_point;
+    //需要发布地图消息才用关键帧判断
+    if(map_pub_en){
+      auto diff_dis = (state_point.pos - last_key_state_point.pos).norm();
+      double data[3] = {0.0, 0.0, 0.0};      // 初始化数据
+      MTK::vectview<double, 3> diff_R(data); // 使用数据初始化vectview
+      state_point.rot.boxminus(diff_R, last_key_state_point.rot);
+      if (diff_dis > 0.3 || abs(rad2deg(diff_R.x())) > 30 ||
+          abs(rad2deg(diff_R.y())) > 30) {
+        *pcl_wait_pub += *feats_down_world;
+        last_key_state_point = state_point;
+      }
     }
+
     /******* Publish points *******/
     if (path_en)
       publish_path(pubPath_);

@@ -6,7 +6,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch.conditions import IfCondition
-
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import IncludeLaunchDescription
 from launch_ros.actions import Node
 
 
@@ -56,8 +57,12 @@ def generate_launch_description():
         arguments=['-d', rviz_cfg],
         condition=IfCondition(rviz_use)
     )
-
+    other_launch_file_path = PathJoinSubstitution([get_package_share_directory('livox_ros_driver2'), 'launch_ROS2', 'msg_MID360_launch.py'])
+    include_other_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(other_launch_file_path),
+    )
     ld = LaunchDescription()
+    ld.add_action(include_other_launch)
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_config_path_cmd)
     ld.add_action(decalre_config_file_cmd)
@@ -66,5 +71,6 @@ def generate_launch_description():
 
     ld.add_action(fast_lio_node)
     ld.add_action(rviz_node)
+    
 
     return ld

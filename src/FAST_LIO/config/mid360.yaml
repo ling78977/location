@@ -4,10 +4,10 @@
         point_filter_num: 3
         max_iteration: 3
         filter_size_surf: 0.5
-        filter_size_map: 0.5
+        filter_size_map: 0.1
         cube_side_length: 1000.0
         runtime_pos_log_enable: false
-        map_file_path: "./test.pcd"
+        map_file_path: "/home/ling/rm/location/src/FAST_LIO/PCD/"
 
         common:
             lid_topic:  "/livox/lidar"
@@ -38,11 +38,11 @@
 
         publish:
             path_en: true                # true: publish Path
-            effect_map_en: false         # true: publish Effects
+            effect_map_en: true         # true: publish Effects
             map_en: true                 # true: publish Map cloud
             scan_publish_en:  true       # false: close all the point cloud output
             dense_publish_en: false      # false: low down the points number in a global-frame point clouds scan.
-            scan_bodyframe_pub_en: true  # true: output the point cloud scans in IMU-body-frame
+            scan_bodyframe_pub_en: false  # true: output the point cloud scans in IMU-body-frame
 
         pcd_save:
             pcd_save_en: true

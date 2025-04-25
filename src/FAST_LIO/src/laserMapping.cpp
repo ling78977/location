@@ -34,7 +34,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "IKFoM_toolkit/mtk/src/vectview.hpp"
 // #include "IKFoM_toolkit/mtk/types/SOn.hpp"
-#include <ament_index_cpp/get_package_share_directory.hpp>
+// #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "IMU_Processing.hpp"
 #include "preprocess.h"
 #include "use-ikfom.hpp"
@@ -66,6 +66,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <so3_math.h>
 #include <std_srvs/srv/trigger.hpp>
+#include <string>
 #include <tf2_ros/transform_broadcaster.h>
 #include <thread>
 #include <unistd.h>
@@ -533,16 +534,16 @@ void publish_map(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
 
 void save_to_pcd() {
   pcl::PCDWriter pcd_writer;
-  auto pkg_dir = ament_index_cpp::get_package_share_directory("fast_lio");
+  // auto pkg_dir = ament_index_cpp::get_package_share_directory("fast_lio");
 
   // auto pkg_dir=rclcpp::package::get_package_share_directory("fast_lio");
-  pcd_writer.writeBinary(map_file_path+"scans.pcd", *pcl_wait_pub);
+  pcd_writer.writeBinary(std::string(ROOT_DIR)+"/PCD/scans.pcd", *pcl_wait_pub);
 
   PointVector().swap(ikdtree.PCL_Storage);
   ikdtree.flatten(ikdtree.Root_Node, ikdtree.PCL_Storage, NOT_RECORD);
   featsFromMap->clear();
   featsFromMap->points = ikdtree.PCL_Storage;
-  pcd_writer.writeBinary(map_file_path+"ikd.pcd", *featsFromMap);
+  pcd_writer.writeBinary(std::string(ROOT_DIR)+"/PCD/ikd.pcd", *featsFromMap);
 }
 
 template <typename T> void set_posestamp(T &out) {
@@ -1093,13 +1094,13 @@ int main(int argc, char **argv) {
     // string all_points_dir(string(string(ROOT_DIR) + "PCD/") + file_name);
     pcl::PCDWriter pcd_writer;
     // cout << "current scan saved to /PCD/" << file_name << endl;
-    pcd_writer.writeBinary(map_file_path+"scans2.pcd", *pcl_wait_pub);
+    pcd_writer.writeBinary(std::string(ROOT_DIR)+"/PCD/scans2.pcd", *pcl_wait_pub);
     PointVector().swap(ikdtree.PCL_Storage);
     ikdtree.flatten(ikdtree.Root_Node, ikdtree.PCL_Storage, NOT_RECORD);
     featsFromMap->clear();
     featsFromMap->points = ikdtree.PCL_Storage;
     // string all_ikd_points_dir(string(string(ROOT_DIR) + "PCD/") + string("ikd.pcd"));
-    pcd_writer.writeBinary(map_file_path+"ikd2.pcd", *featsFromMap);
+    pcd_writer.writeBinary(std::string(ROOT_DIR)+"/PCD/ikd2.pcd", *featsFromMap);
   }
 
 

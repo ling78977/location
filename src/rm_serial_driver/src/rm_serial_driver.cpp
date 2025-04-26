@@ -53,9 +53,9 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 void RMSerialDriver::twistSubCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
   twist_mutes_.lock();
-  msg->linear.x = vx_;
-  msg->linear.y = vy_;
-  msg->angular.z = vyaw_;
+  vx_=msg->linear.x ;
+   vy_=msg->linear.y ;
+  vyaw_=msg->angular.z ;
   twist_mutes_.unlock();
 }
 

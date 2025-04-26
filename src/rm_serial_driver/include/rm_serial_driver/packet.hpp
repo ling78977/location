@@ -12,7 +12,7 @@ namespace rm_serial_driver
 {
 struct ReceivePacket
 {
-  uint8_t header = 0x5A;
+  uint8_t header = 0xff;
   uint8_t detect_color : 1;  // 0-red 1-blue
   bool reset_tracker : 1;
   uint8_t reserved : 6;
@@ -27,7 +27,7 @@ struct ReceivePacket
 
 struct SendPacket
 {
-  uint8_t header = 0xA5;
+  uint8_t header = 0xff;
   float vx;
   float vy;
   float vyaw;

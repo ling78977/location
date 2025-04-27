@@ -7,12 +7,10 @@
 #include <vector>
 #include <map>
 #include <array>
-#include <numeric>
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
 #include <cstdint> // <cstdint> requires c++11 support
-#include <functional>
 
 #ifndef WITHOUT_NUMPY
 #  define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION

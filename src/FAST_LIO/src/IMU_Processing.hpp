@@ -68,13 +68,15 @@ public:
   V3D cov_bias_gyr;
   V3D cov_bias_acc;
   double first_lidar_time;
+  bool is_location = false;
 
 private:
   void
   publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr
                        pubOdomAftMapped,
                    std::unique_ptr<tf2_ros::TransformBroadcaster> &tf_br,
-                   esekfom::esekf<state_ikfom, 12, input_ikfom> &kf,const builtin_interfaces::msg::Time &time);
+                   esekfom::esekf<state_ikfom, 12, input_ikfom> &kf,
+                   const builtin_interfaces::msg::Time &time);
   void IMU_init(const MeasureGroup &meas,
                 esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, int &N);
   void UndistortPcl(const MeasureGroup &meas,
@@ -150,17 +152,22 @@ inline void ImuProcess::set_extrinsic(const V3D &transl, const M3D &rot) {
   Lidar_R_wrt_IMU = rot;
 }
 
-inline void ImuProcess::set_gyr_cov(const V3D &scaler) { cov_gyr_scale = scaler; }
+inline void ImuProcess::set_gyr_cov(const V3D &scaler) {
+  cov_gyr_scale = scaler;
+}
 
-inline void ImuProcess::set_acc_cov(const V3D &scaler) { cov_acc_scale = scaler; }
+inline void ImuProcess::set_acc_cov(const V3D &scaler) {
+  cov_acc_scale = scaler;
+}
 
 inline void ImuProcess::set_gyr_bias_cov(const V3D &b_g) { cov_bias_gyr = b_g; }
 
 inline void ImuProcess::set_acc_bias_cov(const V3D &b_a) { cov_bias_acc = b_a; }
 
-inline void ImuProcess::IMU_init(
-    const MeasureGroup &meas,
-    esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, int &N) {
+inline void
+ImuProcess::IMU_init(const MeasureGroup &meas,
+                     esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
+                     int &N) {
   /** 1. initializing the gravity, gyro bias, acc and gyro covariance
    ** 2. normalize the acceleration measurenments to unit gravity **/
 
@@ -198,38 +205,44 @@ inline void ImuProcess::IMU_init(
     N++;
   }
   state_ikfom init_state = kf_state.get_x();
-  init_state.grav = S2(-mean_acc / mean_acc.norm() * G_m_s2);
+  // init_state.grav = S2(-mean_acc / mean_acc.norm() * G_m_s2);
   init_state.grav = S2(0, 0, -G_m_s2);
-  // 计算 Roll
-  double roll = std::atan2(mean_acc.y(), mean_acc.z());
-
-  // 计算 Pitch
-  double pitch =
-      std::atan2(-mean_acc.x(), std::sqrt(mean_acc.y() * mean_acc.y() +
-                                          mean_acc.z() * mean_acc.z()));
-  std::cout << "roll: " << roll << " pitch: " << pitch << std::endl;
-
-  // state_inout.rot = Eye3d; // Exp(mean_acc.cross(V3D(0, 0, -1 /
-  // scale_gravity)));
   init_state.bg = mean_gyr;
   init_state.offset_T_L_I = Lidar_T_wrt_IMU;
   init_state.offset_R_L_I = Lidar_R_wrt_IMU;
-  // 计算四元数分量
-  double cy = cos(0 * 0.5);
-  double sy = sin(0 * 0.5);
-  double cp = cos(pitch * 0.5);
-  double sp = sin(pitch * 0.5);
-  double cr = cos(roll * 0.5);
-  double sr = sin(roll * 0.5);
 
-  Eigen::Quaterniond q;
-  q.w() = cr * cp * cy + sr * sp * sy;
-  q.x() = sr * cp * cy - cr * sp * sy;
-  q.y() = cr * sp * cy + sr * cp * sy;
-  q.z() = cr * cp * sy - sr * sp * cy;
-  q = q.normalized();
-  init_state.rot =
-      SO3(q.coeffs().w(), q.coeffs().x(), q.coeffs().y(), q.coeffs().z());
+  //如果没有启用定位，设置初始值的旋转，否则，使用点云配准的结果
+  if (!is_location) {
+    // 计算 Roll
+    double roll = std::atan2(mean_acc.y(), mean_acc.z());
+
+    // 计算 Pitch
+    double pitch =
+        std::atan2(-mean_acc.x(), std::sqrt(mean_acc.y() * mean_acc.y() +
+                                            mean_acc.z() * mean_acc.z()));
+    std::cout << "roll: " << roll << " pitch: " << pitch << std::endl;
+
+    // state_inout.rot = Eye3d; // Exp(mean_acc.cross(V3D(0, 0, -1 /
+    // scale_gravity)));
+
+    // 计算四元数分量
+    double cy = cos(0 * 0.5);
+    double sy = sin(0 * 0.5);
+    double cp = cos(pitch * 0.5);
+    double sp = sin(pitch * 0.5);
+    double cr = cos(roll * 0.5);
+    double sr = sin(roll * 0.5);
+
+    Eigen::Quaterniond q;
+    q.w() = cr * cp * cy + sr * sp * sy;
+    q.x() = sr * cp * cy - cr * sp * sy;
+    q.y() = cr * sp * cy + sr * cp * sy;
+    q.z() = cr * cp * sy - sr * sp * cy;
+    q = q.normalized();
+    init_state.rot =
+        SO3(q.coeffs().w(), q.coeffs().x(), q.coeffs().y(), q.coeffs().z());
+  }
+
   kf_state.change_x(init_state);
 
   esekfom::esekf<state_ikfom, 12, input_ikfom>::cov init_P = kf_state.get_P();
@@ -321,7 +334,7 @@ inline void ImuProcess::UndistortPcl(
     Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc;
     kf_state.predict(dt, Q, in);
     // it_imu
-    publish_odometry(pubOdomAftMapped, tf_br, kf_state,tail->header.stamp);
+    publish_odometry(pubOdomAftMapped, tf_br, kf_state, tail->header.stamp);
 
     /* save the poses at each IMU measurements */
     imu_state = kf_state.get_x();
@@ -401,13 +414,13 @@ inline void ImuProcess::UndistortPcl(
   }
 }
 
-inline void ImuProcess::Process(
-    const MeasureGroup &meas,
-    esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
-    PointCloudXYZI::Ptr cur_pcl_un_,
-    const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr
-        pubOdomAftMapped,
-    std::unique_ptr<tf2_ros::TransformBroadcaster> &tf_br) {
+inline void
+ImuProcess::Process(const MeasureGroup &meas,
+                    esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
+                    PointCloudXYZI::Ptr cur_pcl_un_,
+                    const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr
+                        pubOdomAftMapped,
+                    std::unique_ptr<tf2_ros::TransformBroadcaster> &tf_br) {
   double t1, t2, t3;
   // t1 = omp_get_wtime();
 
@@ -440,7 +453,7 @@ inline void ImuProcess::Process(
     return;
   }
   // t1=omp_get_wtime();
-  UndistortPcl(meas, kf_state, *cur_pcl_un_, pubOdomAftMapped,tf_br);
+  UndistortPcl(meas, kf_state, *cur_pcl_un_, pubOdomAftMapped, tf_br);
 
   // t2 = omp_get_wtime();
   // t3 = omp_get_wtime();
@@ -452,8 +465,9 @@ inline void ImuProcess::publish_odometry(
     const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr
         pubOdomAftMapped,
     std::unique_ptr<tf2_ros::TransformBroadcaster> &tf_br,
-    esekfom::esekf<state_ikfom, 12, input_ikfom> &kf,const builtin_interfaces::msg::Time &time) {
-      nav_msgs::msg::Odometry odomAftMapped;
+    esekfom::esekf<state_ikfom, 12, input_ikfom> &kf,
+    const builtin_interfaces::msg::Time &time) {
+  nav_msgs::msg::Odometry odomAftMapped;
   odomAftMapped.header.frame_id = "camera_init";
   odomAftMapped.child_frame_id = "body";
   odomAftMapped.header.stamp = time;
@@ -466,15 +480,14 @@ inline void ImuProcess::publish_odometry(
   odomAftMapped.pose.pose.orientation.w = kf.get_x().rot.w();
   pubOdomAftMapped->publish(odomAftMapped);
   auto P = kf.get_P();
-  for (int i = 0; i < 6; i ++)
-  {
-      int k = i < 3 ? i + 3 : i - 3;
-      odomAftMapped.pose.covariance[i*6 + 0] = P(k, 3);
-      odomAftMapped.pose.covariance[i*6 + 1] = P(k, 4);
-      odomAftMapped.pose.covariance[i*6 + 2] = P(k, 5);
-      odomAftMapped.pose.covariance[i*6 + 3] = P(k, 0);
-      odomAftMapped.pose.covariance[i*6 + 4] = P(k, 1);
-      odomAftMapped.pose.covariance[i*6 + 5] = P(k, 2);
+  for (int i = 0; i < 6; i++) {
+    int k = i < 3 ? i + 3 : i - 3;
+    odomAftMapped.pose.covariance[i * 6 + 0] = P(k, 3);
+    odomAftMapped.pose.covariance[i * 6 + 1] = P(k, 4);
+    odomAftMapped.pose.covariance[i * 6 + 2] = P(k, 5);
+    odomAftMapped.pose.covariance[i * 6 + 3] = P(k, 0);
+    odomAftMapped.pose.covariance[i * 6 + 4] = P(k, 1);
+    odomAftMapped.pose.covariance[i * 6 + 5] = P(k, 2);
   }
 
   geometry_msgs::msg::TransformStamped trans;

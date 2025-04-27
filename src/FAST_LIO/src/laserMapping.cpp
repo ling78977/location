@@ -609,6 +609,7 @@ void h_share_model(state_ikfom &s,
     vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
 
     auto &points_near = Nearest_Points[i];
+    
 
     if (ekfom_data.converge) {
       /** Find the closest surfaces in the map **/

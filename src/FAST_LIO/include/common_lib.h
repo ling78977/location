@@ -217,7 +217,7 @@ bool esti_normvector(Matrix<T, 3, 1> &normvec, const PointVector &point, const T
     return true;
 }
 
-float calc_dist(PointType p1, PointType p2){
+inline float calc_dist(PointType p1, PointType p2){
     float d = (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z);
     return d;
 }
@@ -256,12 +256,12 @@ bool esti_plane(Matrix<T, 4, 1> &pca_result, const PointVector &point, const T &
     return true;
 }
 
-double get_time_sec(const builtin_interfaces::msg::Time &time)
+inline double get_time_sec(const builtin_interfaces::msg::Time &time)
 {
     return rclcpp::Time(time).seconds();
 }
 
-rclcpp::Time get_ros_time(double timestamp)
+inline rclcpp::Time get_ros_time(double timestamp)
 {
     int32_t sec = std::floor(timestamp);
     auto nanosec_d = (timestamp - std::floor(timestamp)) * 1e9;

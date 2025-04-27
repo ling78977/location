@@ -1147,7 +1147,7 @@ private:
 
   double es_threshold_ = 0.005;        // 迭代收敛阈值
   double spacing_dis_ = 1;             // 点与点间隔距离
-  int max_iter_num_init_location = 30; // 牛顿法迭代最大次数
+  int max_iter_num_init_location = 25; // 牛顿法迭代最大次数
   bool debug_cloud_ = true;
 
   bool effect_pub_en = false, map_pub_en = false;

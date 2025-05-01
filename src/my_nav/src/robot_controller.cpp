@@ -54,7 +54,7 @@ public:
     follow_path_pub_ =
         this->create_publisher<nav_msgs::msg::Path>("follow_path", 10);
     vel_cmd_pub_ =
-        this->create_publisher<geometry_msgs::msg::Twist>("/vel_cmd", 10);
+        this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
     tf2_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
@@ -95,7 +95,7 @@ public:
           this, this->get_clock(), odemetry_period_ms,
           std::bind(&RobotController::odometry_callback, this));
       debug_cmd_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-          "/vel_cmd", 10,
+          "/cmd_vel", 10,
           std::bind(&RobotController::debug_cmd_sub_callback, this,
                     std::placeholders::_1));
     }

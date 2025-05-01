@@ -67,6 +67,8 @@
 #include <so3_math.h>
 #include <std_srvs/srv/trigger.hpp>
 #include <string>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <unistd.h>
 #include <vector>
@@ -709,7 +711,7 @@ bool init_ikdtree() {
   //   return false;
   // }
 
-  ikdtree.set_downsample_param(0.1);
+  ikdtree.set_downsample_param(0.5);
   ikdtree.Build(globalMap->points);
   std::cout << "---- ikdtree size: " << ikdtree.size() << std::endl;
   return true;
@@ -718,7 +720,7 @@ bool init_ikdtree() {
 class LaserLocationNode : public rclcpp::Node {
 public:
   LaserLocationNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-      : Node("laser_mapping", options) {
+      : Node("laser_location", options) {
     this->declare_parameter<int>("max_iteration", 4);
     this->declare_parameter<string>("map_file_path", "");
     this->declare_parameter<string>("common.lid_topic", "/livox/lidar");
@@ -857,6 +859,25 @@ public:
     sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, 10,
                                                                 imu_cbk);
 
+    tf_publisher_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    rclcpp::Time now;
+    geometry_msgs::msg::TransformStamped t;
+
+    t.header.stamp = now;
+    t.header.frame_id = "body";
+    t.child_frame_id = "base_link";
+
+    t.transform.translation.x = -0.07;
+    t.transform.translation.y = 0;
+    t.transform.translation.z = -0.1;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, 0);
+    t.transform.rotation.x = q.x();
+    t.transform.rotation.y = q.y();
+    t.transform.rotation.z = q.z();
+    t.transform.rotation.w = q.w();
+
+    tf_publisher_->sendTransform(t);
     auto map_period_ms =
         std::chrono::milliseconds(static_cast<int64_t>(1000.0));
     map_pub_timer_ = rclcpp::create_timer(
@@ -1138,7 +1159,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_pcl_pc_;
   rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr
       sub_pcl_livox_;
-
+  std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_publisher_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr map_pub_timer_;

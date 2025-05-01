@@ -9,7 +9,7 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
 from launch_ros.actions import Node
-
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     package_path = get_package_share_directory('fast_lio')
@@ -72,7 +72,7 @@ def generate_launch_description():
     include_other_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(other_launch_file_path),
     )
-
+    foxglove_cmd=ExecuteProcess(cmd=['ros2', 'launch', 'foxglove_bridge', 'foxglove_bridge_launch.xml'],output='screen')
     ld = LaunchDescription()
     ld.add_action(include_other_launch)
     ld.add_action(declare_use_sim_time_cmd)
@@ -83,6 +83,7 @@ def generate_launch_description():
 
     ld.add_action(fast_lio_node)
     ld.add_action(rm_serial_driver_node)
+    ld.add_action(foxglove_cmd)
     # ld.add_action(rviz_node)
     
 

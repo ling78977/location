@@ -1,4 +1,11 @@
-/**:
+/rm_serial_driver:
+  ros__parameters:
+    device_name: /dev/ttyUSB0
+    baud_rate: 115200
+    flow_control: none
+    parity: none
+    stop_bits: "1"
+/laser_location:
     ros__parameters:
         feature_extract_enable: false
         point_filter_num: 3
@@ -15,7 +22,7 @@
             time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
             time_offset_lidar_to_imu: 0.0 # Time offset between lidar and IMU calibrated by other algorithms, e.g. LI-Init (can be found in README).
                                         # This param will take effect no matter what time_sync_en is. So if the time offset is not known exactly, please set as 0.0
-            debug_cloud_en: false
+            debug_cloud_en: true
         preprocess:
             lidar_type: 1                # 1 for Livox serials LiDAR, 2 for Velodyne LiDAR, 3 for ouster LiDAR, 4 for any other pointcloud input
             scan_line:  4
@@ -45,4 +52,15 @@
             pcd_save_en: true
             interval: -1                 # how many LiDAR frames saved in each pcd file; 
                                         # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.
-                                        
+/map_publisher:
+    ros__parameters:
+        frame_id: camera_init
+        topic_name: map
+        # use_sim_time: false
+        yaml_filename: /home/ling/rm/location/src/my_nav/maps/first_map.yaml
+/Robot_controller: 
+    ros__parameters:
+        debug_simulation: false
+        forward_look_distance: 0.15
+        max_vx: 0.8
+        max_vyaw: 1.2

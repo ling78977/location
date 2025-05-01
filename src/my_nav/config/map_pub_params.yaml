@@ -1,0 +1,6 @@
+/**:
+    ros__parameters:
+        frame_id: camera_init
+        topic_name: map
+        # use_sim_time: false
+        yaml_filename: /home/ling/rm/location/src/my_nav/maps/first_map.yaml

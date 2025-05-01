@@ -65,8 +65,8 @@ def generate_launch_description():
     ld.add_action(global_planner_node)
     ld.add_action(robot_control_node)
     # ld.add_action(rm_serial_driver_node)
-    ld.add_action(fast_location_node)
-    ld.add_action(include_other_launch)
+    # ld.add_action(fast_location_node)
+    # ld.add_action(include_other_launch)
     ld.add_action(foxglove_cmd)
 
 

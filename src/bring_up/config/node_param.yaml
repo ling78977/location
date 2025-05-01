@@ -57,10 +57,10 @@
         frame_id: camera_init
         topic_name: map
         # use_sim_time: false
-        yaml_filename: /home/ling/rm/location/src/my_nav/maps/first_map.yaml
+        yaml_filename: /home/ling/rm/location/src/my_nav/maps/first_map2.yaml
 /Robot_controller: 
     ros__parameters:
-        debug_simulation: false
+        debug_simulation: true
         forward_look_distance: 0.15
         max_vx: 0.8
         max_vyaw: 1.2

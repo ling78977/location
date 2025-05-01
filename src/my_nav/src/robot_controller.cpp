@@ -136,6 +136,9 @@ private:
     }
     global_path_ = *msg;
     follow_path_ = global_path_;
+    for(int i=0;i<(int)follow_path_.poses.size();i++){
+      follow_path_.poses[i].header.frame_id="camera_init";
+    }
     start_follow_ = true;
   }
   void control_callback() {
@@ -279,6 +282,9 @@ private:
     // double avg_vyaw = (last_twist.angular.z + msg->angular.z) / 2;
     double dt = (this->get_clock()->now() - last_time_).seconds();
     last_time_ = this->get_clock()->now();
+    if(dt>0.5){
+      return;
+    }
 
     last_twist = *msg;
     debug_x_ = debug_x_ + (msg->linear.x * std::cos(debug_yaw_) -
